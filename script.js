@@ -1,4 +1,4 @@
-// script.js
+// script.js (Same as before - no changes needed)
 /**
  * ========================================
  * किसान टूल प्रबंधक - SQLite + JSON Edition
