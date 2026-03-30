@@ -1,0 +1,222 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>किसान टूल प्रबंधक</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- SQL.js for SQLite -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <base target="_blank">
+</head>
+<body>
+    <!-- Database Status -->
+    <div id="dbStatus" class="db-status">
+        <span class="db-indicator" id="dbIndicator">🟡</span>
+        <span id="dbStatusText">डेटाबेस कनेक्ट हो रहा है...</span>
+    </div>
+
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <button id="menuBtn" class="menu-btn" onclick="toggleMenu()">☰</button>
+            <h1 class="app-title">किसान टूल प्रबंधक</h1>
+            <div class="header-spacer"></div>
+        </header>
+
+        <!-- Side Menu -->
+        <nav id="sideMenu" class="side-menu">
+            <div class="menu-header">
+                <h2>मेनू</h2>
+                <button class="close-menu" onclick="toggleMenu()">×</button>
+            </div>
+            <ul class="menu-list">
+                <li><a href="#" onclick="navigateTo('dashboard'); return false;">डैशबोर्ड</a></li>
+                <li><a href="#" onclick="navigateTo('rates'); return false;">रेट सेट करें</a></li>
+                <li><a href="#" onclick="navigateTo('history'); return false;">इतिहास</a></li>
+                <li><a href="#" onclick="navigateTo('udhaar'); return false;">उधार / खाता बही</a></li>
+                <li><a href="#" onclick="exportDatabase(); return false;">📥 JSON एक्सपोर्ट</a></li>
+                <li><a href="#" onclick="document.getElementById('importFile').click(); return false;">📤 JSON इम्पोर्ट</a></li>
+            </ul>
+        </nav>
+        
+        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDatabase(this)">
+        <div id="menuOverlay" class="menu-overlay" onclick="toggleMenu()"></div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard -->
+            <section id="dashboard" class="page active">
+                <h2 class="page-title">टूल चुनें</h2>
+                <div class="tools-grid">
+                    <div class="tool-card" onclick="openStartScreen('Cultivator', 'कल्टिवेटर')">
+                        <div class="tool-image-container">
+                            <img src="images/cultivator.png" alt="कल्टिवेटर" class="tool-image">
+                        </div>
+                        <div class="tool-name">कल्टिवेटर</div>
+                    </div>
+                    <div class="tool-card" onclick="openStartScreen('Rotavator', 'रोटावेटर')">
+                        <div class="tool-image-container">
+                            <img src="images/rotavator.png" alt="रोटावेटर" class="tool-image">
+                        </div>
+                        <div class="tool-name">रोटावेटर</div>
+                    </div>
+                    <div class="tool-card" onclick="openStartScreen('Leveler', 'लेवलर')">
+                        <div class="tool-image-container">
+                            <img src="images/leveler.png" alt="लेवलर" class="tool-image">
+                        </div>
+                        <div class="tool-name">लेवलर</div>
+                    </div>
+                    <div class="tool-card" onclick="openStartScreen('Trolley', 'ट्रॉली')">
+                        <div class="tool-image-container">
+                            <img src="images/trolley.png" alt="ट्रॉली" class="tool-image">
+                        </div>
+                        <div class="tool-name">ट्रॉली</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Start Screen -->
+            <section id="startScreen" class="page">
+                <div class="start-container">
+                    <h2 class="page-title" id="startToolNameHindi">टूल का नाम</h2>
+                    <div class="rate-display">
+                        <span class="rate-label">प्रति घंटा दर:</span>
+                        <span class="rate-value" id="startRateValue">₹0</span>
+                    </div>
+                    <div class="rate-warning" id="rateWarning" style="display: none;">
+                        कृपया पहले इस टूल का रेट सेट करें!
+                    </div>
+                    <button id="startBtn" class="btn btn-start" onclick="startTool()">स्टार्ट</button>
+                    <button class="btn btn-secondary" onclick="navigateTo('dashboard')">वापस जाएँ</button>
+                </div>
+            </section>
+
+            <!-- Running Screen -->
+            <section id="runningScreen" class="page">
+                <div class="running-container">
+                    <h2 class="page-title" id="runningToolNameHindi">टूल का नाम</h2>
+                    <div class="timer-display" id="timerDisplay">00:00:00</div>
+                    <div class="running-status">चल रहा है...</div>
+                    <button class="btn btn-stop" onclick="stopTool()">स्टॉप</button>
+                </div>
+            </section>
+
+            <!-- Result Screen -->
+            <section id="resultScreen" class="page">
+                <div class="result-container">
+                    <h2 class="page-title">कार्य पूर्ण</h2>
+                    <div class="result-card">
+                        <div class="result-item">
+                            <span class="result-label">टूल:</span>
+                            <span class="result-value" id="resultToolName">-</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">कुल समय:</span>
+                            <span class="result-value" id="resultTime">-</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">प्रति घंटा दर:</span>
+                            <span class="result-value" id="resultRate">-</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">कुल राशि:</span>
+                            <span class="result-value" id="resultCost">-</span>
+                        </div>
+                    </div>
+                    
+                    <a id="whatsappShareBtn" href="#" target="_blank" class="whatsapp-btn">
+                        <span class="whatsapp-icon">📱</span>
+                        <span>व्हाट्सऐप पर बिल भेजें</span>
+                    </a>
+                    
+                    <button class="btn btn-primary" onclick="backToDashboard()">डैशबोर्ड पर जाएँ</button>
+                </div>
+            </section>
+
+            <!-- Rates Page -->
+            <section id="rates" class="page">
+                <h2 class="page-title">प्रति घंटा रेट सेट करें</h2>
+                <div class="rates-form">
+                    <div class="rate-input-group">
+                        <label for="rateCultivator">कल्टिवेटर (₹/घंटा)</label>
+                        <input type="number" id="rateCultivator" placeholder="दर दर्ज करें" min="0">
+                    </div>
+                    <div class="rate-input-group">
+                        <label for="rateRotavator">रोटावेटर (₹/घंटा)</label>
+                        <input type="number" id="rateRotavator" placeholder="दर दर्ज करें" min="0">
+                    </div>
+                    <div class="rate-input-group">
+                        <label for="rateLeveler">लेवलर (₹/घंटा)</label>
+                        <input type="number" id="rateLeveler" placeholder="दर दर्ज करें" min="0">
+                    </div>
+                    <div class="rate-input-group">
+                        <label for="rateSprayer">स्प्रेयर (₹/घंटा)</label>
+                        <input type="number" id="rateSprayer" placeholder="दर दर्ज करें" min="0">
+                    </div>
+                    <div class="rate-input-group">
+                        <label for="rateTrolley">ट्रॉली (₹/घंटा)</label>
+                        <input type="number" id="rateTrolley" placeholder="दर दर्ज करें" min="0">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveRates()">रेट सेव करें</button>
+                </div>
+            </section>
+
+            <!-- History Page -->
+            <section id="history" class="page">
+                <h2 class="page-title">काम का इतिहास</h2>
+                <div class="history-actions">
+                    <button class="btn btn-danger" onclick="deleteSelectedHistory()">चयनित इतिहास हटाएँ</button>
+                </div>
+                <div class="history-list" id="historyList"></div>
+                <div class="empty-state" id="emptyHistory" style="display: none;">
+                    <p>कोई इतिहास रिकॉर्ड नहीं मिला।</p>
+                </div>
+            </section>
+
+            <!-- Udhaar Page -->
+            <section id="udhaar" class="page">
+                <h2 class="page-title">उधार / खाता बही</h2>
+                
+                <div class="udhaar-form">
+                    <div class="form-group">
+                        <label for="udhaarName">नाम</label>
+                        <input type="text" id="udhaarName" placeholder="नाम दर्ज करें">
+                    </div>
+                    <div class="form-group">
+                        <label for="udhaarMobile">मोबाइल नंबर</label>
+                        <input type="tel" id="udhaarMobile" placeholder="मोबाइल नंबर दर्ज करें">
+                    </div>
+                    <div class="form-group">
+                        <label for="udhaarAmount">राशि (₹)</label>
+                        <input type="number" id="udhaarAmount" placeholder="राशि दर्ज करें" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="udhaarDate">तारीख</label>
+                        <input type="date" id="udhaarDate">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveUdhaar()">उधार जोड़ें</button>
+                </div>
+
+                <h3 class="section-subtitle">उधार रिकॉर्ड</h3>
+                <div class="udhaar-list" id="udhaarList"></div>
+                <div class="empty-state" id="emptyUdhaar" style="display: none;">
+                    <p>कोई उधार रिकॉर्ड नहीं मिला।</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Lock Overlay -->
+        <div id="lockOverlay" class="lock-overlay" style="display: none;">
+            <div class="lock-message">
+                <p>टूल चल रहा है!</p>
+                <p>अन्य सुविधाओं का उपयोग करने के लिए कृपया टूल बंद करें।</p>
+                <button class="btn btn-primary" onclick="navigateTo('runningScreen')">चल रहे स्क्रीन पर जाएँ</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
