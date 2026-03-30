@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "buildCommand": "# Static site, no build needed",
+  "framework": "static",
+  "public": "."
+}
